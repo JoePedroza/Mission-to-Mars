@@ -19,7 +19,8 @@ def scrape_all():
         "news_paragraph": news_paragraph,
         "featured_image": featured_image(browser),
         "facts": mars_facts(),
-        "last_modified": dt.datetime.now()
+        "last_modified": dt.datetime.now(),
+        "hemispheres": mars_hemispheres(browser)
     }
 
     # Stop webdriver and return data
@@ -96,6 +97,76 @@ def mars_facts():
 
     # Convert dataframe into HTML format, add bootstrap
     return df.to_html(classes="table table-striped")
+
+def mars_hemispheres(browser):
+
+    hemisphere_image_urls = []
+
+    # Use browser to visit the URL 
+    url = 'https://astrogeology.usgs.gov/search/results?q=hemisphere+enhanced&k1=target&v1=Mars'
+    browser.visit(url)
+
+    # Create a list to hold the images and titles.
+    html = browser.html
+    mars_soup = soup(html, 'html.parser')
+
+    hemi_names = []
+
+    try:    
+
+        # Get all h3
+        results = mars_soup.find_all('div', class_="collapsible results")
+        hemispheres = results[0].find_all('h3')
+
+        # Store text
+        for name in hemispheres:
+            hemi_names.append(name.text)
+
+
+        # Search for thumbnail links
+        thumbnail_results = results[0].find_all('a')
+        thumbnail_links = []
+
+        for thumbnail in thumbnail_results:
+            
+            if (thumbnail.img):              
+                thumbnail_url = 'https://astrogeology.usgs.gov/' + thumbnail['href']
+                thumbnail_links.append(thumbnail_url)
+
+
+        full_imgs = []
+
+        for url in thumbnail_links:
+            
+            
+            browser.visit(url)
+            
+            html = browser.html
+            mars_soup = soup(html, 'html.parser')
+            
+            results = mars_soup.find_all('img', class_='wide-image')
+            relative_img_path = results[0]['src']
+            img_link = 'https://astrogeology.usgs.gov/' + relative_img_path
+            
+            full_imgs.append(img_link)
+
+        mars_hemi_zip = zip(hemi_names, full_imgs)
+
+        hemisphere_image_urls = []
+
+        for title, img in mars_hemi_zip:
+            
+            mars_hemi_dict = {}
+            mars_hemi_dict['title'] = title
+            mars_hemi_dict['img_url'] = img
+
+            hemisphere_image_urls.append(mars_hemi_dict)
+
+    except AttributeError:
+        return None
+
+    return hemisphere_image_urls
+
 
 if __name__ == "__main__":
 

@@ -18,5 +18,5 @@ hemisphere_image_urls = [
 ]
 
 
-![image](mars_site.png)
+
 
